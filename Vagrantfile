@@ -2,10 +2,7 @@
 # vi: set ft=ruby :
 
 Vagrant.configure("2") do |config|
-
   config.vm.box = "bento/ubuntu-16.04"
-  config.vm.network "forwarded_port", guest: 3000, host: 3000
-  config.vm.network "private_network", ip: "192.168.33.10"
 
   config.vm.provider "virtualbox" do |vb|
     vb.gui = true
@@ -13,24 +10,31 @@ Vagrant.configure("2") do |config|
 
     vb.customize [
       "modifyvm", :id,
-      "--vram", "256", # フルスクリーンモード用
-      "--clipboard", "bidirectional", # クリップボード共有
-      "--draganddrop", "bidirectional", # ドラッグアンドドロップ
-      "--cpus", "3",
-      "--ioapic", "on" # I/O APICを有効化
+      "--vram", "256",
+      "--clipboard-mode", "bidirectional",
+      "--draganddrop", "bidirectional",
+      "--cpus", "2",
+      "--ioapic", "on"
     ]
+    
+    config.vm.provision "shell", inline: <<-SHELL
+      sudo wget -q https://www.ubuntulinux.jp/ubuntu-ja-archive-keyring.gpg -O- | sudo apt-key add -
+      sudo wget -q https://www.ubuntulinux.jp/ubuntu-jp-ppa-keyring.gpg -O- | sudo apt-key add -
+      sudo wget https://www.ubuntulinux.jp/sources.list.d/xenial.list -O /etc/apt/sources.list.d/ubuntu-ja.list
+      sudo apt -y update
+      sudo apt-get -y upgrade
+      sudo apt-get -y install ubuntu-defaults-ja
+      sudo apt-get -y install ubuntu-desktop
+      sudo apt -y install openjdk-8-jdk
+      sudo curl -s "https://get.sdkman.io" | bash
+      source /home/vagrant/.sdkman/bin/sdkman-init.sh
+      sdk install gradle
+      sudo wget https://download.springsource.com/release/STS4/4.5.0.RELEASE/dist/e4.14/spring-tool-suite-4-4.5.0.RELEASE-e4.14.0-linux.gtk.x86_64.tar.gz
+      tar xvzf spring-tool-suite-4-4.5.0.RELEASE-e4.14.0-linux.gtk.x86_64.tar.gz
+      git config --global user.name user1
+      git config --global user.email user1@vagrant.demo
+      curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+      sudo apt-key fingerprint 0EBFCD88
+    SHELL
   end
-
-  config.vm.provision "shell", inline: <<-SHELL
-    apt-get update
-    apt-get upgrade
-
-    apt-get install -y ubuntu-desktop
-
-
-    reboot
-  SHELL
-
-  # 起動時にファイル転送しておきたい場合は以下を記載
-  # config.vm.provision "file", source: "転送元", destination: "転送先"
 end
